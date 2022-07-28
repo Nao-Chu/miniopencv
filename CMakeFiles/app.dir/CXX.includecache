@@ -6,13 +6,13 @@
 
 #IncludeRegexTransform: 
 
-/home/zzp/mini_opencv/main.cpp
+/home/zzp/miniopencv/main.cpp
 stdio.h
 -
 iostream
 -
 myopencv.h
-/home/zzp/mini_opencv/myopencv.h
+/home/zzp/miniopencv/myopencv.h
 opencv2/opencv.hpp
 -
 opencv2/imgproc/imgproc.hpp
@@ -20,14 +20,18 @@ opencv2/imgproc/imgproc.hpp
 opencv2/highgui/highgui.hpp
 -
 
-/home/zzp/mini_opencv/myopencv.cpp
+/home/zzp/miniopencv/myopencv.cpp
 myopencv.h
-/home/zzp/mini_opencv/myopencv.h
+/home/zzp/miniopencv/myopencv.h
 iostream
 -
 
 include/myopencv.h
 opencv2/opencv.hpp
+-
+vector
+-
+numeric
 -
 
 include/opencv2/calib3d.hpp

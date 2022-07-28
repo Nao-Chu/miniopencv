@@ -6,7 +6,6 @@ include_directories(
     ${CMAKE_HOME_DIRECTORY}/core
     ${CMAKE_HOME_DIRECTORY}/imgproc
     ${CMAKE_HOME_DIRECTORY}/include
-    #/usr/local/include/opencv4
 )
 
 link_directories(

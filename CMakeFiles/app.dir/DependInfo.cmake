@@ -4,8 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/zzp/mini_opencv/main.cpp" "/home/zzp/mini_opencv/CMakeFiles/app.dir/main.cpp.o"
-  "/home/zzp/mini_opencv/myopencv.cpp" "/home/zzp/mini_opencv/CMakeFiles/app.dir/myopencv.cpp.o"
+  "/home/zzp/miniopencv/main.cpp" "/home/zzp/miniopencv/CMakeFiles/app.dir/main.cpp.o"
+  "/home/zzp/miniopencv/myopencv.cpp" "/home/zzp/miniopencv/CMakeFiles/app.dir/myopencv.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

@@ -1,3 +1,3 @@
-/home/zzp/mini_opencv/CMakeFiles/rebuild_cache.dir
-/home/zzp/mini_opencv/CMakeFiles/edit_cache.dir
-/home/zzp/mini_opencv/CMakeFiles/app.dir
+/home/zzp/miniopencv/CMakeFiles/rebuild_cache.dir
+/home/zzp/miniopencv/CMakeFiles/edit_cache.dir
+/home/zzp/miniopencv/CMakeFiles/app.dir
