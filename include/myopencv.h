@@ -61,11 +61,17 @@ class CompareGaussian
 public:
 	T operator() (vector<T> data, vector<double> ele) 
 	{
-		return data[0];
+		T acc = 0;
+		for (int i = 0; i < data.size(); ++i) {
+			acc += data[i]*ele[i];
+		}
+		return acc;
 	}
 	vector<T> data[3];
 };
 
+
+Mat mGetGaussianKernel(const int size, const double sigma);
 template<class Compare>
 void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp);
 
