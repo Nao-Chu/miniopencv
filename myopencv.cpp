@@ -9,7 +9,7 @@ void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp)
 {
 	dst = Mat::zeros(src.size(), src.type());
 
-	int cx = ele.rows >> 1;	
+	int cx = ele.rows >> 1; 	
 	int cy = ele.cols >> 1;	
 	for (int i = 0; i < src.rows; ++i) {
 		for (int j = 0; j < src.cols; ++j) {
