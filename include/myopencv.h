@@ -42,9 +42,36 @@ public:
 	vector<T> data[3];
 };
 
+template<class T>
+class CompareMedian
+{
+public:
+	T operator() (vector<T> data, vector<double> ele) 
+	{
+		sort(data.begin(), data.end());
+		int median = (data.size()>>1);
+		return data[median];
+	}
+	vector<T> data[3];
+};
+
+template<class T>
+class CompareGaussian
+{
+public:
+	T operator() (vector<T> data, vector<double> ele) 
+	{
+		return data[0];
+	}
+	vector<T> data[3];
+};
+
 template<class Compare>
 void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp);
 
 void merode(Mat& src, Mat& dst, Mat& ele);
 void mdilate(Mat& src, Mat& dst, Mat& ele);
 void mblur(Mat& src, Mat& dst, Size size);
+void mmedianBlur(Mat& src, Mat& dst, int ksize);
+void mGaussianBlur(Mat& src, Mat& dst, Size ksize);
+

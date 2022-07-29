@@ -72,3 +72,18 @@ void mblur(Mat& src, Mat& dst, Size size)
 	CompareMean<double> func;
 	convolution(src, dst, ele, func);
 }
+
+void mmedianBlur(Mat& src, Mat& dst, int ksize)
+{
+	Size size(ksize, ksize);
+	Mat ele = Mat::ones(size, CV_8UC1);
+	CompareMedian<double> func;
+	convolution(src, dst, ele, func);
+}
+
+void mGaussianBlur(Mat& src, Mat& dst, Size ksize)
+{
+	Mat ele = Mat::ones(ksize, CV_8UC1);
+	CompareGaussian<double> func;
+	convolution(src, dst, ele, func);
+}
