@@ -102,6 +102,40 @@ void mdilate(Mat& src, Mat& dst, Mat& ele)
 	convolution(src, dst, ele, func);
 }
 
+void mopen(Mat& src, Mat& dst, Mat& ele)
+{
+	Mat temp;
+	merode(src, temp, ele);
+	mdilate(temp, dst, ele);
+}
+
+void mclose(Mat& src, Mat& dst, Mat& ele)
+{
+	Mat temp;
+	mdilate(src, temp, ele);
+	merode(temp, dst, ele);
+}
+
+void mtopHat(Mat& src, Mat& dst, Mat& ele)
+{
+	mopen(src, dst, ele);
+	dst = src - dst;
+}
+
+void mblackHat(Mat& src, Mat& dst, Mat& ele)
+{
+	mclose(src, dst, ele);
+	dst = dst - src;
+}
+
+void mgradient(Mat& src, Mat& dst, Mat& ele)
+{
+	Mat temp;
+	mdilate(src, temp, ele);
+	merode(src, dst, ele);
+	dst = temp - dst;
+}
+
 void mblur(Mat& src, Mat& dst, Size size)
 {
 	Mat ele = Mat::ones(size, CV_8UC1);
@@ -123,4 +157,74 @@ void mGaussianBlur(Mat& src, Mat& dst, Size ksize)
 	Mat ele = mGetGaussianKernel(ksize.height, sigma);
 	CompareGaussian<double> func;
 	convolution(src, dst, ele, func);
+}
+
+bool isflood(Scalar diff, Scalar loDiff, Scalar upDiff)
+{
+	for (int i = 0; i < 3; ++i) {
+		if(!(diff[i] >= loDiff[i] && diff[i] <= upDiff[i] )) {
+			return false;
+		}
+	}
+	return true;
+}
+
+void mfloodFill(Mat& image, Point seedPoint, Scalar newVal, Scalar loDiff, Scalar upDiff, int flags)
+{
+	queue<int> root;
+	int n = image.rows;
+	int m = image.cols;
+	int code = seedPoint.x * m + seedPoint.y;
+	root.push(code);
+	
+	vector<int> dx, dy;
+	if (flags == 4) {
+		dx = {-1, 1, 0, 0};
+		dy = {0, 0, -1, 1};
+	} else {
+		dx = {-1, 1, 0, 0, -1, -1, 1, 1};
+		dy = {0, 0, -1, 1, -1, 1, -1, 1};
+	}
+
+	vector<vector<int>> fill(n, vector<int>(m,0));
+	Scalar mloDiff, mupDiff;
+	while (!root.empty()) {
+		code = root.front();
+		root.pop();
+		int i = code / m;
+		int j = code % m;
+		for (int k = 0; k < 3; ++k) {
+			mloDiff[k] = image.at<Vec3b>(i, j)[k] - loDiff[k];
+			mupDiff[k] = image.at<Vec3b>(i, j)[k] + upDiff[k];
+		}	
+
+		for (int k = 0; k < dx.size(); ++k) {
+			int mx = dx[k] + i;
+			int my = dy[k] + j;
+			if (mx < 0 || mx >= n || my < 0 || my >= m || fill[mx][my] == 1) {
+				continue;
+			}
+
+			Scalar diff;
+			diff[0] = image.at<Vec3b>(mx, my)[0];
+			diff[1] = image.at<Vec3b>(mx, my)[1];
+			diff[2] = image.at<Vec3b>(mx, my)[2];
+			if (isflood(diff, mloDiff, mupDiff)) {	
+				fill[mx][my] = 1;
+			 	root.push(mx * m + my);
+			}
+		}
+	}
+
+	for (int i = 0; i < fill.size(); ++i)
+	{
+		for (int j = 0; j < fill[0].size(); ++j) 
+		{
+			if (fill[i][j] == 0) {
+				continue;
+			}
+			image.at<Vec3b>(i, j) = Vec3b(newVal[0], newVal[1], newVal[2]);
+		}
+		
+	}
 }

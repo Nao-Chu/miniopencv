@@ -77,7 +77,14 @@ void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp);
 
 void merode(Mat& src, Mat& dst, Mat& ele);
 void mdilate(Mat& src, Mat& dst, Mat& ele);
+void mopen(Mat& src, Mat& dst, Mat& ele);
+void mclose(Mat& src, Mat& dst, Mat& ele);
+void mtopHat(Mat& src, Mat& dst, Mat& ele);
+void mblackHat(Mat& src, Mat& dst, Mat& ele);
+void mgradient(Mat& src, Mat& dst, Mat& ele);
 void mblur(Mat& src, Mat& dst, Size size);
 void mmedianBlur(Mat& src, Mat& dst, int ksize);
 void mGaussianBlur(Mat& src, Mat& dst, Size ksize);
 
+void mfloodFill(Mat& image, Point seedPoint, Scalar newVal,
+            Scalar loDiff = Scalar(), Scalar upDiff = Scalar(), int flags = 4 );
