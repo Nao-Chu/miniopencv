@@ -1,9 +1,8 @@
 #include "myopencv.h"
 
 #include <iostream>
-using namespace std;
 
-Mat mGetGaussianKernel(const int size, const double sigma)
+Mat mgetGaussianKernel(const int size, const double sigma)
 {
     double **gaus=new double *[size];
     for(int i=0;i<size;i++)
@@ -154,7 +153,7 @@ void mmedianBlur(Mat& src, Mat& dst, int ksize)
 void mGaussianBlur(Mat& src, Mat& dst, Size ksize)
 {
 	double sigma = 0.3*((ksize.height-1)*0.5-1)+0.8;
-	Mat ele = mGetGaussianKernel(ksize.height, sigma);
+	Mat ele = mgetGaussianKernel(ksize.height, sigma);
 	CompareGaussian<double> func;
 	convolution(src, dst, ele, func);
 }
@@ -228,3 +227,176 @@ void mfloodFill(Mat& image, Point seedPoint, Scalar newVal, Scalar loDiff, Scala
 		
 	}
 }
+
+void mpyrUp(Mat& src, Mat& dst, Size ksize)
+{
+	Mat temp = Mat::zeros(ksize, src.type());
+	int x_population = ksize.height/src.rows;
+	int y_population = ksize.width/src.cols;
+	for (int i = 0; i < src.rows; ++i) 
+	{
+		for (int j = 0; j < src.cols; ++j) 
+		{
+			if (temp.channels() == 1) {
+				temp.at<uchar>(i*x_population,j*y_population) = src.at<uchar>(i,j);
+				
+			} else {
+				temp.at<Vec3b>(i*x_population,j*y_population) = src.at<Vec3b>(i,j);
+			}
+		}
+	}
+	
+	// double sigma = 0.3*((5-1)*0.5-1)+0.8;
+	// Mat ele = mgetGaussianKernel(5, 100);
+
+	Mat ele(Size(5, 5), CV_64FC1);
+	float tempArr[5][5]={1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};
+	for (int i = 0;i<5;i++)
+	{
+		for (int j = 0; j<5; j++)
+		{
+			ele.at<double>(i,j) = tempArr[i][j] / 256;
+		}
+	}
+	ele *= x_population*x_population;
+	CompareGaussian<double> func;
+	convolution(temp, dst, ele, func);
+}
+
+void mpyrDown(Mat& src, Mat& dst, Size ksize)
+{
+	Mat temp;
+	mGaussianBlur(src, temp, Size(5,5));
+	int x_population = src.rows/ksize.height;
+	int y_population = src.cols/ksize.width;
+	dst = Mat::zeros(ksize, src.type());
+	for (int i = 0; i < dst.rows; ++i) 
+	{
+		for (int j = 0; j < dst.cols; ++j) 
+		{
+			if (dst.channels() == 1) {
+				dst.at<uchar>(i,j) = temp.at<uchar>(i*x_population,j*y_population);
+				
+			} else {
+				dst.at<Vec3b>(i,j) = temp.at<Vec3b>(i*x_population,j*y_population);
+			}
+		}
+	}
+}
+
+void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpolation)
+{
+	if (ksize.width == 0 || ksize.height == 0) {
+		ksize = Size(fx*src.cols, fy*src.rows);
+	} else {
+		fx = ksize.width*1.0/src.cols;
+		fy = ksize.height*1.0/src.rows;
+	}
+	
+
+	if (fx == 1 && fy == 1) {
+		dst = src;
+		return;
+	}
+
+	dst = Mat::zeros(ksize, src.type());
+	int dx[] = {0, 1, 0, 1};
+	int dy[] = {0, 0, 1, 1};
+
+	for (int i = 0; i < dst.rows; ++i) 
+	{
+		double y = (i+0.5)/fy - 0.5;
+		double v = y - int(y);
+		for (int j = 0; j < dst.cols; ++j) 
+		{
+			double x = (j+0.5)/fx - 0.5;
+			double u = x - (int)x;
+			double near_v[3][4];
+			for (int k = 0; k < 4; ++k) {
+				int x1 = (int)x + dx[k];
+				int y1 = (int)y + dy[k];
+
+				if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows) {
+					near_v[0][k] = 0;
+					near_v[1][k] = 0;
+					near_v[2][k] = 0;
+				} else {
+					if (dst.channels() == 1) {
+						near_v[0][k] = src.at<uchar>(x1,x1);
+						
+					} else {
+						near_v[0][k] = src.at<Vec3b>(y1,x1)[0];
+						near_v[1][k] = src.at<Vec3b>(y1,x1)[1];
+						near_v[2][k] = src.at<Vec3b>(y1,x1)[2];
+					}
+					
+				}
+			}
+			if (1) {
+				cout << i << ", " << j << endl;
+				cout << near_v[0][0] << near_v[0][1] << near_v[0][2] << near_v[0][3] << endl;
+				cout << u << "  " << v << " " << ((1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3])) << endl;
+			}
+			if (dst.channels() == 1) {
+				dst.at<uchar>(i,j) = (1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3]);
+				
+			} else {
+				dst.at<Vec3b>(i,j)[0] = (1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3]);
+				dst.at<Vec3b>(i,j)[1] = (1-v)*((1-u)*near_v[1][0] + u*near_v[1][1]) + v*((1-u)*near_v[1][2] + u*near_v[1][3]);
+				dst.at<Vec3b>(i,j)[2] = (1-v)*((1-u)*near_v[2][0] + u*near_v[2][1]) + v*((1-u)*near_v[2][2] + u*near_v[2][3]);
+			}
+
+			
+		}
+	}
+}
+
+// void te(Mat matSrc, Mat& matDst1)
+// {
+
+// 	uchar* dataDst = matDst1.data;
+//     int stepDst = matDst1.step;
+//     uchar* dataSrc = matSrc.data;
+//     int stepSrc = matSrc.step;
+//     int iWidthSrc = matSrc.cols;
+//     int iHiehgtSrc = matSrc.rows;
+
+//     for (int j = 0; j < matDst1.rows; ++j)
+//     {
+//         float fy = (float)((j + 0.5) * scale_y - 0.5);
+//         int sy = cvFloor(fy);
+//         fy -= sy;
+//         sy = std::min(sy, iHiehgtSrc - 2);
+//         sy = std::max(0, sy);
+
+//         short cbufy[2];
+//         cbufy[0] = cv::saturate_cast<short>((1.f - fy) * 2048);
+//         cbufy[1] = 2048 - cbufy[0];
+
+//         for (int i = 0; i < matDst1.cols; ++i)
+//         {
+//             float fx = (float)((i + 0.5) * scale_x - 0.5);
+//             int sx = cvFloor(fx);
+//             fx -= sx;
+
+//             if (sx < 0) {
+//                 fx = 0, sx = 0;
+//             }
+//             if (sx >= iWidthSrc - 1) {
+//                 fx = 0, sx = iWidthSrc - 2;
+//             }
+
+//             short cbufx[2];
+//             cbufx[0] = cv::saturate_cast<short>((1.f - fx) * 2048);
+//             cbufx[1] = 2048 - cbufx[0];
+
+//             for (int k = 0; k < matSrc.channels(); ++k)
+//             {
+//                 *(dataDst+ j*stepDst + 3*i + k) = (*(dataSrc + sy*stepSrc + 3*sx + k) * cbufx[0] * cbufy[0] + 
+//                     *(dataSrc + (sy+1)*stepSrc + 3*sx + k) * cbufx[0] * cbufy[1] + 
+//                     *(dataSrc + sy*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[0] + 
+//                     *(dataSrc + (sy+1)*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[1]) >> 22;
+//             }
+//         }
+//     }
+// }

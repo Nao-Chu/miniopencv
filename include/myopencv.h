@@ -71,7 +71,7 @@ public:
 };
 
 
-Mat mGetGaussianKernel(const int size, const double sigma);
+Mat mgetGaussianKernel(const int size, const double sigma);
 template<class Compare>
 void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp);
 
@@ -88,3 +88,8 @@ void mGaussianBlur(Mat& src, Mat& dst, Size ksize);
 
 void mfloodFill(Mat& image, Point seedPoint, Scalar newVal,
             Scalar loDiff = Scalar(), Scalar upDiff = Scalar(), int flags = 4 );
+
+void mpyrUp(Mat& src, Mat& dst, Size ksize);
+void mpyrDown(Mat& src, Mat& dst, Size ksize);
+
+void mresize(Mat& src, Mat& dst, Size ksize, double fx = 0, double fy = 0, int interpolation = INTER_LINEAR);
