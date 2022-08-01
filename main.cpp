@@ -43,8 +43,8 @@ int main()
     // expendSampleFunc(srcImage, mdstImage);
     // pyrDown(srcImage, dstImage, Size(srcImage.cols>>1, srcImage.rows>>1));
     // mpyrDown(srcImage, mdstImage, Size(srcImage.cols>>1, srcImage.rows>>1));
-    resize(srcImage, dstImage, Size(), 2, 2, INTER_LINEAR);
-    mresize(srcImage, mdstImage, Size(), 2, 2);
+    resize(srcImage, dstImage, Size(), 2, 2, INTER_NEAREST);
+    mresize(srcImage, mdstImage, Size(), 2, 2, INTER_NEAREST);
 
 //    imwrite("1erode.png", test);
 	cout << "dst: " << dstImage.channels() << endl;

@@ -284,6 +284,79 @@ void mpyrDown(Mat& src, Mat& dst, Size ksize)
 	}
 }
 
+void mresize_nearest(Mat& src, Mat& dst, double scale_x, double scale_y)
+{
+	for (int j = 0; j < dst.rows; ++j)
+	{
+		int sy = cvFloor(j / scale_y);
+		sy = std::min(sy, src.rows - 1);
+		for (int i = 0; i < dst.cols; ++i)
+		{
+			int sx = cvFloor(i / scale_x);
+			sx = std::min(sx, src.cols - 1);
+
+			if (dst.channels() == 1) {
+				dst.at<uchar>(j, i) = src.at<uchar>(sy, sx);
+				
+			} else {
+				dst.at<Vec3b>(j, i) = src.at<Vec3b>(sy, sx);
+			}
+		}
+	}
+
+}
+
+void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y)
+{
+	int dx[] = {0, 1, 0, 1};
+	int dy[] = {0, 0, 1, 1};
+
+	uchar* dataDst = dst.data;
+	int stepDst = dst.step;
+	uchar* dataSrc = src.data;
+	int stepSrc = src.step;
+
+	for (int j = 0; j < dst.rows; ++j)
+	{
+		float fy = (float)((j + 0.5) / scale_y - 0.5);
+		int sy = cvFloor(fy);
+		fy -= sy;
+		sy = std::min(sy, src.rows - 1);
+		sy = std::max(0, sy);
+
+		short cbufy[2];
+		cbufy[0] = cv::saturate_cast<short>((1.f - fy) * 2048);
+		cbufy[1] = 2048 - cbufy[0];
+
+		for (int i = 0; i < dst.cols; ++i)
+		{
+			float fx = (float)((i + 0.5) / scale_x - 0.5);
+			int sx = cvFloor(fx);
+			fx -= sx;
+ 
+			if (sx < 0) {
+				fx = 0, sx = 0;
+			}
+			if (sx >= src.cols - 1) {
+				fx = 0, sx = src.cols - 1;
+			}
+ 
+			short cbufx[2];
+			cbufx[0] = cv::saturate_cast<short>((1.f - fx) * 2048);
+			cbufx[1] = 2048 - cbufx[0];
+
+
+			for (int k = 0; k < src.channels(); ++k)
+			{
+				*(dataDst+ j*stepDst + 3*i + k) = (*(dataSrc + sy*stepSrc + 3*sx + k) * cbufx[0] * cbufy[0] + 
+					*(dataSrc + (sy+1)*stepSrc + 3*sx + k) * cbufx[0] * cbufy[1] + 
+					*(dataSrc + sy*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[0] + 
+					*(dataSrc + (sy+1)*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[1]) >> 22;
+			}
+		}
+	}
+}
+
 void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpolation)
 {
 	if (ksize.width == 0 || ksize.height == 0) {
@@ -300,103 +373,9 @@ void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpola
 	}
 
 	dst = Mat::zeros(ksize, src.type());
-	int dx[] = {0, 1, 0, 1};
-	int dy[] = {0, 0, 1, 1};
-
-	for (int i = 0; i < dst.rows; ++i) 
-	{
-		double y = (i+0.5)/fy - 0.5;
-		double v = y - int(y);
-		for (int j = 0; j < dst.cols; ++j) 
-		{
-			double x = (j+0.5)/fx - 0.5;
-			double u = x - (int)x;
-			double near_v[3][4];
-			for (int k = 0; k < 4; ++k) {
-				int x1 = (int)x + dx[k];
-				int y1 = (int)y + dy[k];
-
-				if (x1 < 0 || x1 >= src.cols || y1 < 0 || y1 >= src.rows) {
-					near_v[0][k] = 0;
-					near_v[1][k] = 0;
-					near_v[2][k] = 0;
-				} else {
-					if (dst.channels() == 1) {
-						near_v[0][k] = src.at<uchar>(x1,x1);
-						
-					} else {
-						near_v[0][k] = src.at<Vec3b>(y1,x1)[0];
-						near_v[1][k] = src.at<Vec3b>(y1,x1)[1];
-						near_v[2][k] = src.at<Vec3b>(y1,x1)[2];
-					}
-					
-				}
-			}
-			if (1) {
-				cout << i << ", " << j << endl;
-				cout << near_v[0][0] << near_v[0][1] << near_v[0][2] << near_v[0][3] << endl;
-				cout << u << "  " << v << " " << ((1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3])) << endl;
-			}
-			if (dst.channels() == 1) {
-				dst.at<uchar>(i,j) = (1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3]);
-				
-			} else {
-				dst.at<Vec3b>(i,j)[0] = (1-v)*((1-u)*near_v[0][0] + u*near_v[0][1]) + v*((1-u)*near_v[0][2] + u*near_v[0][3]);
-				dst.at<Vec3b>(i,j)[1] = (1-v)*((1-u)*near_v[1][0] + u*near_v[1][1]) + v*((1-u)*near_v[1][2] + u*near_v[1][3]);
-				dst.at<Vec3b>(i,j)[2] = (1-v)*((1-u)*near_v[2][0] + u*near_v[2][1]) + v*((1-u)*near_v[2][2] + u*near_v[2][3]);
-			}
-
-			
-		}
+	if (interpolation == INTER_NEAREST) {
+		 mresize_nearest(src, dst, fx, fy);
+	} else if (interpolation == INTER_LINEAR) {
+		mresize_linear(src, dst, fx, fy);
 	}
 }
-
-// void te(Mat matSrc, Mat& matDst1)
-// {
-
-// 	uchar* dataDst = matDst1.data;
-//     int stepDst = matDst1.step;
-//     uchar* dataSrc = matSrc.data;
-//     int stepSrc = matSrc.step;
-//     int iWidthSrc = matSrc.cols;
-//     int iHiehgtSrc = matSrc.rows;
-
-//     for (int j = 0; j < matDst1.rows; ++j)
-//     {
-//         float fy = (float)((j + 0.5) * scale_y - 0.5);
-//         int sy = cvFloor(fy);
-//         fy -= sy;
-//         sy = std::min(sy, iHiehgtSrc - 2);
-//         sy = std::max(0, sy);
-
-//         short cbufy[2];
-//         cbufy[0] = cv::saturate_cast<short>((1.f - fy) * 2048);
-//         cbufy[1] = 2048 - cbufy[0];
-
-//         for (int i = 0; i < matDst1.cols; ++i)
-//         {
-//             float fx = (float)((i + 0.5) * scale_x - 0.5);
-//             int sx = cvFloor(fx);
-//             fx -= sx;
-
-//             if (sx < 0) {
-//                 fx = 0, sx = 0;
-//             }
-//             if (sx >= iWidthSrc - 1) {
-//                 fx = 0, sx = iWidthSrc - 2;
-//             }
-
-//             short cbufx[2];
-//             cbufx[0] = cv::saturate_cast<short>((1.f - fx) * 2048);
-//             cbufx[1] = 2048 - cbufx[0];
-
-//             for (int k = 0; k < matSrc.channels(); ++k)
-//             {
-//                 *(dataDst+ j*stepDst + 3*i + k) = (*(dataSrc + sy*stepSrc + 3*sx + k) * cbufx[0] * cbufy[0] + 
-//                     *(dataSrc + (sy+1)*stepSrc + 3*sx + k) * cbufx[0] * cbufy[1] + 
-//                     *(dataSrc + sy*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[0] + 
-//                     *(dataSrc + (sy+1)*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[1]) >> 22;
-//             }
-//         }
-//     }
-// }
