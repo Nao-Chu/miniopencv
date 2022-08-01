@@ -284,15 +284,15 @@ void mpyrDown(Mat& src, Mat& dst, Size ksize)
 	}
 }
 
-void mresize_nearest(Mat& src, Mat& dst, double scale_x, double scale_y)
+void mresizeNearest(Mat& src, Mat& dst, double scale_x, double scale_y)
 {
 	for (int j = 0; j < dst.rows; ++j)
 	{
-		int sy = cvFloor(j / scale_y);
+		int sy = cvFloor(j * scale_y);
 		sy = std::min(sy, src.rows - 1);
 		for (int i = 0; i < dst.cols; ++i)
 		{
-			int sx = cvFloor(i / scale_x);
+			int sx = cvFloor(i * scale_x);
 			sx = std::min(sx, src.cols - 1);
 
 			if (dst.channels() == 1) {
@@ -306,7 +306,7 @@ void mresize_nearest(Mat& src, Mat& dst, double scale_x, double scale_y)
 
 }
 
-void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y)
+void mresizeLinear(Mat& src, Mat& dst, double scale_x, double scale_y)
 {
 	int dx[] = {0, 1, 0, 1};
 	int dy[] = {0, 0, 1, 1};
@@ -318,7 +318,7 @@ void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y)
 
 	for (int j = 0; j < dst.rows; ++j)
 	{
-		float fy = (float)((j + 0.5) / scale_y - 0.5);
+		float fy = (float)((j + 0.5) * scale_y - 0.5);
 		int sy = cvFloor(fy);
 		fy -= sy;
 		sy = std::min(sy, src.rows - 1);
@@ -330,7 +330,7 @@ void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y)
 
 		for (int i = 0; i < dst.cols; ++i)
 		{
-			float fx = (float)((i + 0.5) / scale_x - 0.5);
+			float fx = (float)((i + 0.5) * scale_x - 0.5);
 			int sx = cvFloor(fx);
 			fx -= sx;
  
@@ -357,6 +357,35 @@ void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y)
 	}
 }
 
+void mresizeArea(Mat& src, Mat& dst, double scale_x, double scale_y)
+{
+	uchar* dataDst = dst.data;
+	int stepDst = dst.step;
+	uchar* dataSrc = src.data;
+	int stepSrc = src.step;
+	int fx = cvFloor(scale_x);
+	int fy = cvFloor(scale_y);
+
+	for (int j = 0; j < dst.rows; ++j)
+	{
+		for (int i = 0; i < dst.cols; ++i)
+		{
+			for (int k = 0; k < src.channels(); ++k)
+			{
+				double box = 0;
+				for (int m = j*fy; m < ((j+1)*fy); ++m) {
+					for (int n = i*fx; n < ((i+1)*fx); ++n) {
+						box += *(dataSrc + m*stepSrc + 3*n + k);
+						double temp = *(dataSrc + m*stepSrc + 3*n + k);
+					}
+				}
+				box /= (fy*fx);
+				*(dataDst+ j*stepDst + 3*i + k) = cvFloor(box);
+			}
+		}
+	}
+}
+
 void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpolation)
 {
 	if (ksize.width == 0 || ksize.height == 0) {
@@ -365,17 +394,34 @@ void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpola
 		fx = ksize.width*1.0/src.cols;
 		fy = ksize.height*1.0/src.rows;
 	}
-	
 
 	if (fx == 1 && fy == 1) {
 		dst = src;
 		return;
 	}
 
+	int ifx = saturate_cast<int>(fx);
+	int ify = saturate_cast<int>(fy);
+
+	bool is_area_fast = std::abs(fx - ifx) < DBL_EPSILON && std::abs(fy - ify) < DBL_EPSILON;
+
+	if (interpolation == INTER_LINEAR && is_area_fast && fx == 2 && fy == 2) {
+		interpolation = INTER_AREA;
+	}
+
+	double scale_x = 1./fx;
+	double scale_y = 1./fy;
+	if (interpolation == INTER_AREA && (fx > 1 || fy > 1)) {
+		interpolation = INTER_LINEAR;
+	}
+
+
 	dst = Mat::zeros(ksize, src.type());
 	if (interpolation == INTER_NEAREST) {
-		 mresize_nearest(src, dst, fx, fy);
+		mresizeNearest(src, dst, scale_x, scale_y);
 	} else if (interpolation == INTER_LINEAR) {
-		mresize_linear(src, dst, fx, fy);
+		mresizeLinear(src, dst, scale_x, scale_y);
+	} else if (interpolation == INTER_AREA) {
+		mresizeArea(src, dst, scale_x, scale_y);
 	}
 }

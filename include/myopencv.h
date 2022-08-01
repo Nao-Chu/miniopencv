@@ -92,6 +92,7 @@ void mfloodFill(Mat& image, Point seedPoint, Scalar newVal,
 void mpyrUp(Mat& src, Mat& dst, Size ksize);
 void mpyrDown(Mat& src, Mat& dst, Size ksize);
 
-void mresize_nearest(Mat& src, Mat& dst, double scale_x, double scale_y);
-void mresize_linear(Mat& src, Mat& dst, double scale_x, double scale_y);
+void mresizeNearest(Mat& src, Mat& dst, double scale_x, double scale_y);
+void mresizeLinear(Mat& src, Mat& dst, double scale_x, double scale_y);
+void mresizeArea(Mat& src, Mat& dst, double scale_x, double scale_y);
 void mresize(Mat& src, Mat& dst, Size ksize, double fx = 0, double fy = 0, int interpolation = INTER_LINEAR);
