@@ -9,16 +9,17 @@ using namespace cv;
 int main() 
 {
     // Mat srcImage = imread("image/erode.png");
-    // resize(srcImage, srcImage, Size(320,480));
-    // Mat srcImage = imread("image/image.jpg");
-	Mat test = Mat(1, 1, CV_8UC1); 
-	for (int i = 0; i < 1; ++i) {
-	for (int j = 0; j < 1; ++j) {
-		test.at<uchar>(i,j) = j+1;
-	}
-	}
-    Mat srcImage = test;
+    Mat srcImage = imread("image/image.jpg");
+    resize(srcImage, srcImage, Size(320,320));
+	// Mat test = Mat(1, 1, CV_8UC1); 
+	// for (int i = 0; i < 1; ++i) {
+	// for (int j = 0; j < 1; ++j) {
+	// 	test.at<uchar>(i,j) = j+1;
+	// }
+	// }
+    // Mat srcImage = test;
     imshow("src", srcImage);
+    cvtColor(srcImage, srcImage, COLOR_BGR2GRAY);
     Mat element = getStructuringElement(MORPH_RECT, Size(3, 3));
  
     Mat dstImage;
@@ -43,10 +44,13 @@ int main()
     // expendSampleFunc(srcImage, mdstImage);
     // pyrDown(srcImage, dstImage, Size(srcImage.cols>>1, srcImage.rows>>1));
     // mpyrDown(srcImage, mdstImage, Size(srcImage.cols>>1, srcImage.rows>>1));
-    resize(srcImage, dstImage, Size(), 2, 2, INTER_NEAREST);
-    mresize(srcImage, mdstImage, Size(), 2, 2, INTER_NEAREST);
+    // resize(srcImage, dstImage, Size(), 2, 2, INTER_NEAREST);
+    // mresize(srcImage, mdstImage, Size(), 2, 2, INTER_NEAREST);
+    Canny(srcImage, dstImage, 3, 9, 3);
+    mCanny(srcImage, mdstImage, 3, 9, 3);
 
 //    imwrite("1erode.png", test);
+    cout << "src: " << srcImage.channels() << endl;
 	cout << "dst: " << dstImage.channels() << endl;
 	cout << "mdst: " << mdstImage.channels() << endl;
 	cout << "ele: " << element.channels() << endl;
@@ -55,22 +59,24 @@ int main()
     imshow("mdst", mdstImage);
     //imshow("ele", element);
 
-    for (int i = 0; i < dstImage.rows; ++i) {
-        for (int j = 0; j < dstImage.cols; ++j) {
-            cout << (int)dstImage.at<uchar>(i,j) << " ";
-        }
-        cout << endl;
-	}
-    cout << endl;
-    for (int i = 0; i < dstImage.rows; ++i) {
-        for (int j = 0; j < dstImage.cols; ++j) {
-            cout << (int)mdstImage.at<uchar>(i,j) << " ";
-        }
-        cout << endl;
-	}
-	Mat c;
-	compare(dstImage, mdstImage, c, CMP_EQ);
-    imshow("c", c);
+    // for (int i = 0; i < dstImage.rows; ++i) {
+    //     for (int j = 0; j < dstImage.cols; ++j) {
+    //         cout << (int)dstImage.at<uchar>(i,j) << " ";
+    //     }
+    //     cout << endl;
+	// }
+    // cout << endl;
+    // for (int i = 0; i < dstImage.rows; ++i) {
+    //     for (int j = 0; j < dstImage.cols; ++j) {
+    //         cout << (int)mdstImage.at<uchar>(i,j) << " ";
+    //     }
+    //     cout << endl;
+	// }
+    if (dstImage.channels() == mdstImage.channels()) {
+        Mat c;
+        compare(dstImage, mdstImage, c, CMP_EQ);
+        imshow("c", c);
+    }
 	waitKey(0);
 
     return 0;

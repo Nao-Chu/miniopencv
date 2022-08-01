@@ -70,7 +70,6 @@ public:
 	vector<T> data[3];
 };
 
-
 Mat mgetGaussianKernel(const int size, const double sigma);
 template<class Compare>
 void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp);
@@ -96,3 +95,12 @@ void mresizeNearest(Mat& src, Mat& dst, double scale_x, double scale_y);
 void mresizeLinear(Mat& src, Mat& dst, double scale_x, double scale_y);
 void mresizeArea(Mat& src, Mat& dst, double scale_x, double scale_y);
 void mresize(Mat& src, Mat& dst, Size ksize, double fx = 0, double fy = 0, int interpolation = INTER_LINEAR);
+
+double thresholdBinary(double srcval, double thresh, int retval);
+double thresholdBinaryInv(double srcval, double thresh, int retval);
+double thresholdThunc(double srcval, double thresh, int retval);
+double thresholdTozero(double srcval, double thresh, int retval);
+double thresholdTozeroInv(double srcval, double thresh, int retval);
+void mthreshold(Mat& src, Mat& dst, double thresh, double maxval, int type);
+
+void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertureSize = 2);

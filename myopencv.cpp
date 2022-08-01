@@ -425,3 +425,92 @@ void mresize(Mat& src, Mat& dst, Size ksize, double fx, double fy, int interpola
 		mresizeArea(src, dst, scale_x, scale_y);
 	}
 }
+
+double thresholdBinary(double srcval, double thresh, int retval)
+{
+	if (srcval > thresh) {
+		return retval;
+	} else {
+		return 0;
+	}
+}
+
+double thresholdBinaryInv(double srcval, double thresh, int retval)
+{
+	if (srcval > thresh) {
+		return 0;
+	} else {
+		return retval;
+	}
+}
+
+double thresholdThunc(double srcval, double thresh, int retval)
+{
+	if (srcval > thresh) {
+		return thresh;
+	} else {
+		return srcval;
+	}
+}
+
+double thresholdTozero(double srcval, double thresh, int retval)
+{
+	if (srcval > thresh) {
+		return srcval;
+	} else {
+		return 0;
+	}
+}
+
+double thresholdTozeroInv(double srcval, double thresh, int retval)
+{
+	if (srcval > thresh) {
+		return 0;
+	} else {
+		return srcval;
+	}
+}
+
+void mthreshold(Mat& src, Mat& dst, double thresh, double maxval, int type)
+{
+	dst = Mat::zeros(src.size(), src.type());
+
+	uchar* dataDst = dst.data;
+	int stepDst = dst.step;
+	uchar* dataSrc = src.data;
+	int stepSrc = src.step;
+
+	double (*thresholdFunc)(double , double , int );
+	if (type == THRESH_BINARY) {
+		thresholdFunc = thresholdBinary;
+	} else if (type == THRESH_BINARY_INV) {
+		thresholdFunc = thresholdBinaryInv;
+	} else if (type == THRESH_TRUNC) {
+		thresholdFunc = thresholdThunc;
+	} else if (type == THRESH_TOZERO) {
+		thresholdFunc = thresholdTozero;
+	} else if (type == THRESH_TOZERO_INV) {
+		thresholdFunc = thresholdTozeroInv;
+	} else {
+		return;
+	}
+
+	for (int j = 0; j < dst.rows; ++j)
+	{
+		for (int i = 0; i < dst.cols; ++i)
+		{
+			for (int k = 0; k < src.channels(); ++k)
+			{
+				*(dataDst+ j*stepDst + 3*i + k) = thresholdFunc(*(dataSrc + j*stepSrc + 3*i + k), thresh, maxval);
+			}
+		}
+	}
+}
+
+void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertureSize)
+{
+	dst = Mat::zeros(src.size(), CV_8UC1);
+
+	Mat ele = Mat::ones(apertureSize, apertureSize, CV_8UC1);
+	
+}
