@@ -103,4 +103,7 @@ double thresholdTozero(double srcval, double thresh, int retval);
 double thresholdTozeroInv(double srcval, double thresh, int retval);
 void mthreshold(Mat& src, Mat& dst, double thresh, double maxval, int type);
 
+double gauss(float x, float sigma);
+double dgauss(float x, float sigma);
+bool nonmax_suppress(double theta, Mat &g_mat, Point anchor);
 void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertureSize = 2);

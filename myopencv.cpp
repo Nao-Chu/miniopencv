@@ -35,6 +35,39 @@ Mat mgetGaussianKernel(const int size, const double sigma)
     return Kernel;
 }
 
+Mat mgetDerivGaussianKernel(const int size, const double sigma)
+{
+    double **gaus=new double *[size];
+    for(int i=0;i<size;i++)
+    {
+        gaus[i]=new double[size];  //动态生成矩阵
+    }
+    Mat Kernel(size,size,CV_64FC1,Scalar(0));
+    const double PI=4.0*atan(1.0); //圆周率π赋值
+    int center=size/2;
+    double sum=0;
+    for(int i=0;i<size;i++)
+    {
+        for(int j=0;j<size;j++)
+        {
+            gaus[i][j]=(1/(2*PI*sigma*sigma))*exp(-((i-center)*(i-center)+(j-center)*(j-center))/(2*sigma*sigma));//二维高斯函数
+            sum+=gaus[i][j];
+        }
+    }
+ 
+ 
+    for(int i=0;i<size;i++)
+    {
+        for(int j=0;j<size;j++)
+        {
+            gaus[i][j]/=sum;
+            Kernel.at<double>(i,j) = gaus[i][j];//将数组转换为Mat
+ 
+        }
+    }
+    return Kernel;
+}
+
 template<class Compare>
 void convolution(Mat& src, Mat& dst, Mat& ele, Compare comp)
 {
@@ -507,10 +540,101 @@ void mthreshold(Mat& src, Mat& dst, double thresh, double maxval, int type)
 	}
 }
 
+double gauss(float x, float sigma)
+{
+	float xx;
+	if(sigma == 0 ) return 0;
+	if(x == 0) return 1;
+	xx = (float)exp((double)((-x*x)/(2*sigma*sigma)));
+	return xx;
+}
+
+double dgauss(float x, float sigma)
+{
+	float xx;
+	if(sigma == 0) return 0;
+	if(x == 0) return 0;
+	xx = (-x / (sigma * sigma)) * (float)exp((double)((-x*x)/(2*sigma*sigma)));
+	return xx;
+}
+
+bool nonmax_suppress(double theta, Mat &g_mat, Point anchor)
+{
+	double p1_v, p2_v;
+    //计算8邻域灰度
+	uchar N = g_mat.at<uchar>(Point(anchor.x,anchor.y + 1));
+	uchar S = g_mat.at<uchar>(Point(anchor.x,anchor.y - 1));
+	uchar W = g_mat.at<uchar>(Point(anchor.x - 1,anchor.y));
+	uchar E = g_mat.at<uchar>(Point(anchor.x + 1,anchor.y));
+	uchar NE = g_mat.at<uchar>(Point(anchor.x + 1,anchor.y + 1));
+	uchar NW = g_mat.at<uchar>(Point(anchor.x - 1,anchor.y + 1));
+	uchar SW = g_mat.at<uchar>(Point(anchor.x - 1,anchor.y - 1));
+	uchar SE = g_mat.at<uchar>(Point(anchor.x + 1,anchor.y - 1));
+	uchar M =  g_mat.at<uchar>(Point(anchor));
+	double angle = theta * 360 / (2 * CV_PI);//计算角度
+	//判定角度范围 计算 p1,p2插值
+    if(angle > 0 && angle < 45)
+	{
+		p1_v = (1- tan(theta)) * E + tan(theta) * NE;
+		p2_v = (1- tan(theta)) * W + tan(theta) * SW;
+	}
+	else if(angle >= 45 && angle < 90)
+	{
+		p1_v = (1- tan(theta)) * NE + tan(theta) * N;
+		p2_v = (1- tan(theta)) * SW + tan(theta) * S;
+	}
+	else if(angle >= 90 && angle < 135)
+	{
+		p1_v = (1- tan(theta)) * N + tan(theta) * NW;
+		p2_v = (1- tan(theta)) * S + tan(theta) * SE;
+	}
+	else
+	{
+		p1_v = (1- tan(theta)) * NW + tan(theta) * W;
+		p2_v = (1- tan(theta)) * SE + tan(theta) * E;
+	}
+ 
+	if(M < p1_v || M < p2_v) //非最大抑制
+	{
+		return true;
+	}
+	else
+		return false;
+}
+
 void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertureSize)
 {
-	dst = Mat::zeros(src.size(), CV_8UC1);
+	Mat temp;
+	mGaussianBlur(src, temp, Size(5,5));
+	if (temp.channels() > 1) {
+		cvtColor(temp, temp, COLOR_BGR2GRAY);
+	}
+	
+	Mat x_mat, y_mat;
+	Sobel(temp, x_mat, CV_16S, 1, 0, 3, 1, 1, BORDER_DEFAULT);
+	convertScaleAbs(x_mat, x_mat);
 
-	Mat ele = Mat::ones(apertureSize, apertureSize, CV_8UC1);
+	Sobel(temp, y_mat, CV_16S, 1, 0, 3, 1, 1, BORDER_DEFAULT);
+	convertScaleAbs(y_mat, y_mat);
+
+	dst = Mat::zeros(src.size(), CV_8UC1);
+	for(int j = 0; j < src.rows; j++)
+	{
+		for(int i = 0; i < src.cols; i++)
+		{
+				double s_value = sqrt(1.0 * x_mat.at<uchar>(j,i) * x_mat.at<uchar>(j,i) 
+						+ 1.0 * y_mat.at<uchar>(j,i) * y_mat.at<uchar>(j,i));
+				
+				s_value = s_value >= 255 ? 255 : s_value;
+				double theta = atan2(1.0 * y_mat.at<uchar>(j,i), x_mat.at<uchar>(j,i));
+				bool is_suppress = nonmax_suppress(theta, dst, Point(j, i));
+				if (is_suppress) {
+					dst.at<uchar>(j,i) = 0;
+				} else {
+					dst.at<uchar>(j,i) = s_value;
+				}
+				
+		}
+	}
 	
 }
