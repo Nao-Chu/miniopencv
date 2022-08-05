@@ -572,6 +572,8 @@ bool nonmax_suppress(double theta, Mat &g_mat, Point anchor)
 	uchar SE = g_mat.at<uchar>(Point(anchor.x + 1,anchor.y - 1));
 	uchar M =  g_mat.at<uchar>(Point(anchor));
 	double angle = theta * 360 / (2 * CV_PI);//计算角度
+	if (angle > 45.0)
+		cout << "angle = " << angle << endl;
 	//判定角度范围 计算 p1,p2插值
     if(angle > 0 && angle < 45)
 	{
@@ -626,7 +628,7 @@ void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertu
 						+ 1.0 * y_mat.at<uchar>(j,i) * y_mat.at<uchar>(j,i));
 				
 				s_value = s_value >= 255 ? 255 : s_value;
-				double theta = atan2(1.0 * y_mat.at<uchar>(j,i), x_mat.at<uchar>(j,i));
+				double theta = atan2(1.0 * y_mat.at<uchar>(j,i), 1.0 * x_mat.at<uchar>(j,i));
 				bool is_suppress = nonmax_suppress(theta, dst, Point(j, i));
 				if (is_suppress) {
 					dst.at<uchar>(j,i) = 0;
@@ -637,4 +639,90 @@ void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertu
 		}
 	}
 	
+	for(int j = 0; j < dst.rows; j++)
+	{
+		for(int i = 0; i < dst.cols; i++)
+		{
+			if (dst.at<uchar>(j,i) < threshold1) 
+			{
+				dst.at<uchar>(j,i) = 0;
+			} 
+			else if (dst.at<uchar>(j,i) < threshold2) 
+			{
+				bool flage = false; 
+				for (int n = -1; n <= 1 && !flage; ++n) {
+					for (int m = -1; m <= 1; ++m) {
+						if (n == 0 && m == 0) {
+							continue;
+						}
+						int dx = j + n;
+						int dy = i + m;
+						if (dx < 0 || dx >= dst.rows || dy < 0 || dy >= dst.cols) {
+							continue;
+						}
+						if (dst.at<uchar>(dx, dy) > threshold2) {
+							flage = true;
+							break;
+						}
+					}
+				}
+				if (!flage) {
+					dst.at<uchar>(j,i) = 0;
+				}
+			}
+		}
+	}
+}
+
+void mHoughLines(Mat& src, vector<Vec2f>& dst, double rho, double theta, int threshold, double srn, double stn)
+{
+	//累加器
+
+	//申请累加器空间并初始化
+	int Size = 2*sqrt(src.cols*src.cols + src.rows*src.rows)+100;
+	vector<vector<int> >socboard(Size, vector<int>(181, 0));
+
+	//遍历图像并投票
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols; x++)
+		{
+			//检测黑线
+			if (src.at<uchar>(y, x) != 0)
+			{
+				for (int angle = 0; angle < 181; angle++)
+				{
+					int p = x * cos(theta) + y * sin(theta);
+					
+					//错误处理
+					if (p < 0)
+					{
+						printf("at (%d,%d),angle:%d,p:%d\n", x, y, angle, p);
+						printf("warrning!");
+						printf("size:%d\n", Size/2);
+						continue;
+					}
+					//投票计分
+					socboard[p][angle]++;
+				}
+			}	
+		}
+	}
+
+	//遍历计分板，选出符合阈值条件的直线
+	int Max = 0;
+	int kp, kt;
+	kp = 0;
+	kt = 0;
+	for (int i = 0; i < Size; i++)//p
+	{
+		for (int j = 0; j < 181; j++)//angle
+		{
+			if (socboard[i][j] >= threshold)
+			{
+				cout << socboard[i][j] << endl;
+				dst.push_back(Vec2f(i, j));
+			}
+		}
+	}
 }

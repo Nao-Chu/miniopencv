@@ -46,8 +46,36 @@ int main()
     // mpyrDown(srcImage, mdstImage, Size(srcImage.cols>>1, srcImage.rows>>1));
     // resize(srcImage, dstImage, Size(), 2, 2, INTER_NEAREST);
     // mresize(srcImage, mdstImage, Size(), 2, 2, INTER_NEAREST);
-    Canny(srcImage, dstImage, 3, 9, 3);
-    mCanny(srcImage, mdstImage, 3, 9, 3);
+    // Canny(srcImage, dstImage, 3, 9, 3);
+    // mCanny(srcImage, mdstImage, 3, 9, 3);
+
+    Mat midImage;
+    Canny(srcImage, midImage, 50, 100, 3);
+    cvtColor(midImage, dstImage, COLOR_GRAY2BGR);
+    cvtColor(midImage, mdstImage, COLOR_GRAY2BGR);
+    vector<Vec2f> lines;
+    HoughLines(midImage, lines, 1, CV_PI/180, 100, 0, 0);
+    vector<Vec2f> mlines;
+    mHoughLines(srcImage, mlines, 1, CV_PI/180, 100, 0, 0);
+    const int alpha = 1000;
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        float rho = lines[i][0], theta = lines[i][1];
+        double a = cos(theta), b = sin(theta);
+        double x = rho * a, y = rho * b;
+        Point pt1(cvRound(x + alpha * (-b)), cvRound(y + alpha * a));
+        Point pt2(cvRound(x - alpha * (-b)), cvRound(y - alpha * a));
+        line(dstImage, pt1, pt2, Scalar(255, 0, 255), 1, LINE_AA);
+    }
+    for (size_t i = 0; i < mlines.size(); i++)
+    {
+        float rho = mlines[i][0], theta = mlines[i][1];
+        double a = cos(theta), b = sin(theta);
+        double x = rho * a, y = rho * b;
+        Point pt1(cvRound(x + alpha * (-b)), cvRound(y + alpha * a));
+        Point pt2(cvRound(x - alpha * (-b)), cvRound(y - alpha * a));
+        line(mdstImage, pt1, pt2, Scalar(255, 0, 255), 1, LINE_AA);
+    }
 
 //    imwrite("1erode.png", test);
     cout << "src: " << srcImage.channels() << endl;

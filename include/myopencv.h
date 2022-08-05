@@ -107,3 +107,5 @@ double gauss(float x, float sigma);
 double dgauss(float x, float sigma);
 bool nonmax_suppress(double theta, Mat &g_mat, Point anchor);
 void mCanny(Mat& src, Mat& dst, double threshold1, double threshold2, int apertureSize = 2);
+
+void mHoughLines(Mat& src, vector<Vec2f>& dst, double rho, double theta, int threshold, double srn=0, double stn=0);
